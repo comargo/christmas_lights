@@ -4,6 +4,8 @@
 	<comment></comment>
 	<projects>
 		<project>stm32_hal_btn</project>
+		<project>stm32_hal_ws281x</project>
+		<project>visual_effects</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

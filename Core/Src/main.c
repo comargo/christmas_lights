@@ -23,7 +23,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
+#include <stdio.h>
+#include <visual_effects.h>
+#include <hsv2rgb.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,13 +41,13 @@ void OnButtonClicked(struct CM_HAL_BTN *btn, void *pUserData, enum CM_HAL_BTN_Re
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define XMAS_LENGTH 200
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t xmas_buffer[3*XMAS_LENGTH];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,15 +92,48 @@ int main(void)
   /* USER CODE BEGIN 2 */
   button.callback = &OnButtonClicked;
   CM_HAL_BTN_Init(&button);
+  CM_HAL_WS281X_Init(&ws281x, XMAS_GPIO_Port, TIM4);
+  struct CM_HAL_WS281X_Channel xmas_chan1 = {
+  		.GPIO_Pin = XMAS_Pin,
+			.frameBuffer = xmas_buffer,
+			.frameBufferSize = sizeof(xmas_buffer)/sizeof(xmas_buffer[0])
+  };
+  CM_HAL_WS281X_AddChannel(&ws281x, &xmas_chan1);
+  memset(xmas_buffer, 0, sizeof(xmas_buffer));
+  CM_HAL_WS281X_SendBuffer(&ws281x);
+	while(ws281x.state != WS281x_Ready) {
+		__NOP();
+	}
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+//  size_t pos = 0;
+	HAL_Delay(2000);
+	uint16_t pos = 0;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+  	for(int i=0; i<XMAS_LENGTH; ++i) {
+  		uint16_t hue = pos+(i*200)/256;
+  		uint32_t rgb = hsv2rgb_spectrum(HSV(hue&0xFF, 255, 127));
+    	xmas_buffer[3*i]=RED(rgb);
+    	xmas_buffer[3*i+1]=GREEN(rgb);
+    	xmas_buffer[3*i+2]=BLUE(rgb);
+  	}
+
+
+  	CM_HAL_WS281X_SendBuffer(&ws281x);
+  	HAL_Delay(1000/60);
+  	while(ws281x.state != WS281x_Ready) {
+  		__NOP();
+  	}
+  	pos++;
+  	if(pos >= 256) {
+  		pos = 0;
+  	}
   }
   /* USER CODE END 3 */
 }
@@ -120,7 +156,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -146,13 +182,33 @@ void OnButtonClicked(struct CM_HAL_BTN *btn, void *userData, enum CM_HAL_BTN_Rea
 {
 	switch (reason) {
 		case CM_HAL_BTN_CB_PRESSED:
-			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+			printf("Button pressed\r\n");
 			break;
 		case CM_HAL_BTN_CB_RELEASED:
-			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+			printf("Button released\r\n");
+			break;
+		case CM_HAL_BTN_CB_CLICK_TIMEOUT:
+			printf("Button times out\r\n");
+			break;
 		default:
 			break;
 	}
+}
+
+#define FAULT_DELAY(x) for (int i=0; i<x*200000; ++i) __NOP()
+
+static void dot(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+{
+	  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_RESET);
+	  FAULT_DELAY(1);
+	  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
+}
+
+static void dash(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+{
+	  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_RESET);
+	  FAULT_DELAY(3);
+	  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
 }
 
 /* USER CODE END 4 */
@@ -168,6 +224,21 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+	  for(int i=0; i<3; ++i) {
+		  dot(LED_GPIO_Port, LED_Pin);
+		  FAULT_DELAY(1);
+	  }
+	  FAULT_DELAY(2);
+	  for(int i=0; i<3; ++i) {
+		  dash(LED_GPIO_Port, LED_Pin);
+		  FAULT_DELAY(1);
+	  }
+	  FAULT_DELAY(2);
+	  for(int i=0; i<3; ++i) {
+		  dot(LED_GPIO_Port, LED_Pin);
+		  FAULT_DELAY(1);
+	  }
+	  FAULT_DELAY(6);
   }
   /* USER CODE END Error_Handler_Debug */
 }
