@@ -86,6 +86,9 @@ int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 	case MODE_Police:
 		*nPos = police_lights(buffer, numLeds, (*nPos));
 		return 100;
+	case MODE_White:
+		memset(buffer, 0xFF, numLeds*sizeof(RGB));
+		return NO_UPDATE;
 	default:
 		return NO_UPDATE;
 	}

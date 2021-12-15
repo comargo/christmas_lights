@@ -14,11 +14,12 @@
 enum LED_MODES {
   MODE_INVALID = -1,
   MODE_Off = 0,
-	MODE_Start = 1,
+  MODE_Start,
   MODE_Rainbow,
-	MODE_Police,
+  MODE_White,
+  MODE_Police,
 
-	MODE_Last
+  MODE_Last
 };
 
 #define DEFAULT_DELAY -1
