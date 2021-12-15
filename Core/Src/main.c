@@ -26,7 +26,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <visual_effects.h>
-#include <hsv2rgb.h>
+#include <colorutils.h>
+
+#include "ir_commands.h"
+#include "led_modes.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +51,8 @@ void OnButtonClicked(struct CM_HAL_BTN *btn, void *pUserData, enum CM_HAL_BTN_Re
 
 /* USER CODE BEGIN PV */
 uint8_t xmas_buffer[3*XMAS_LENGTH];
+uint8_t xmas_buffer_from[3*XMAS_LENGTH];
+uint8_t xmas_buffer_to[3*XMAS_LENGTH];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,7 +97,11 @@ int main(void)
   /* USER CODE BEGIN 2 */
   button.callback = &OnButtonClicked;
   CM_HAL_BTN_Init(&button);
-  CM_HAL_WS281X_Init(&ws281x, XMAS_GPIO_Port, TIM4);
+
+  CM_HAL_IRREMOTE_Init(&irremote, TIM3);
+  CM_HAL_IRREMOTE_Start_IT(&irremote);
+
+  CM_HAL_WS281X_Init(&ws281x, XMAS_GPIO_Port, TIM2);
   struct CM_HAL_WS281X_Channel xmas_chan1 = {
   		.GPIO_Pin = XMAS_Pin,
 			.frameBuffer = xmas_buffer,
@@ -109,30 +118,49 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 //  size_t pos = 0;
-	HAL_Delay(2000);
-	uint16_t pos = 0;
+	enum LED_MODES oldMode = 0;
+  int oldInModePos = 0;
+
+	enum LED_MODES curMode = 0;
+  int curInModePos = 0;
+
+  fract16 transition = 0;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  	for(int i=0; i<XMAS_LENGTH; ++i) {
-  		uint16_t hue = pos+(i*200)/256;
-  		uint32_t rgb = hsv2rgb_spectrum(HSV(hue&0xFF, 255, 127));
-    	xmas_buffer[3*i]=RED(rgb);
-    	xmas_buffer[3*i+1]=GREEN(rgb);
-    	xmas_buffer[3*i+2]=BLUE(rgb);
-  	}
+    if(irremote.rcvstate == IRREMOTE_DONE) {
+      enum LED_MODES newMode = GetModeFromIR(curMode);
+      if(newMode != MODE_INVALID) {
+        oldMode = curMode;
+        oldInModePos = curInModePos;
 
+        curMode = newMode;
+        curInModePos = 0;
+
+        transition = 0x8002;
+      }
+      CM_HAL_IRREMOTE_Start_IT(&irremote);
+    }
+
+    if(oldMode == curMode) {
+      FillMode(curMode, xmas_buffer, XMAS_LENGTH, &curInModePos);
+    }
+    else {
+      FillMode(oldMode, xmas_buffer_from, XMAS_LENGTH, &oldInModePos);
+      FillMode(curMode, xmas_buffer_to, XMAS_LENGTH, &curInModePos);
+      blend_leds(xmas_buffer_from, xmas_buffer_to, xmas_buffer, XMAS_LENGTH, (transition-0x7FFF)>>7);
+      transition = ease16InOutQuad(transition);
+      if(transition == 0xFFFF) {
+        oldMode = curMode;
+      }
+    }
 
   	CM_HAL_WS281X_SendBuffer(&ws281x);
   	HAL_Delay(1000/60);
   	while(ws281x.state != WS281x_Ready) {
   		__NOP();
-  	}
-  	pos++;
-  	if(pos >= 256) {
-  		pos = 0;
   	}
   }
   /* USER CODE END 3 */

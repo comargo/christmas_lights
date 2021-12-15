@@ -210,20 +210,12 @@ void TIM2_IRQHandler(void)
 }
 void TIM3_IRQHandler(void)
 {
-	CM_HAL_WS281X_IRQHandler(&ws281x, TIM3_IRQn);
-}
-void TIM4_IRQHandler(void)
-{
-	CM_HAL_WS281X_IRQHandler(&ws281x, TIM4_IRQn);
+	CM_HAL_IRREMOTE_IRQHandler(&irremote, TIM3_IRQn);
 }
 
 void DMA1_Channel7_IRQHandler(void)
 {
 	CM_HAL_WS281X_IRQHandler(&ws281x, DMA1_Channel7_IRQn);
-}
-void DMA1_Channel4_IRQHandler(void)
-{
-	CM_HAL_WS281X_IRQHandler(&ws281x, DMA1_Channel4_IRQn);
 }
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

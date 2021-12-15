@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stm32_hal_ws281x.h>
+#include <stm32_hal_irremote.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -48,6 +49,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 struct CM_HAL_WS281x ws281x;
+struct CM_HAL_IRREMOTE irremote;
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
