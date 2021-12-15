@@ -50,9 +50,9 @@ void OnButtonClicked(struct CM_HAL_BTN *btn, void *pUserData, enum CM_HAL_BTN_Re
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t xmas_buffer[3*XMAS_LENGTH];
-uint8_t xmas_buffer_from[3*XMAS_LENGTH];
-uint8_t xmas_buffer_to[3*XMAS_LENGTH];
+RGB xmas_buffer[XMAS_LENGTH];
+RGB xmas_buffer_from[XMAS_LENGTH];
+RGB xmas_buffer_to[XMAS_LENGTH];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -113,8 +113,8 @@ int main(void)
   CM_HAL_WS281X_Init(&ws281x, XMAS_GPIO_Port, TIM2);
   struct CM_HAL_WS281X_Channel xmas_chan1 = {
   		.GPIO_Pin = XMAS_Pin,
-			.frameBuffer = xmas_buffer,
-			.frameBufferSize = sizeof(xmas_buffer)/sizeof(xmas_buffer[0])
+			.frameBuffer = (uint8_t*)xmas_buffer,
+			.frameBufferSize = sizeof(xmas_buffer)
   };
   CM_HAL_WS281X_AddChannel(&ws281x, &xmas_chan1);
   memset(xmas_buffer, 0, sizeof(xmas_buffer));

@@ -9,6 +9,7 @@
 #define INC_LED_MODES_H_
 
 #include <stdint.h>
+#include <color_types.h>
 
 enum LED_MODES {
   MODE_INVALID = -1,
@@ -24,6 +25,6 @@ enum LED_MODES {
 #define NO_UPDATE -2
 
 // returns delay
-int FillMode(enum LED_MODES mode, uint8_t *buffer, uint16_t numLeds, int* nPos);
+int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int* nPos);
 
 #endif /* INC_LED_MODES_H_ */

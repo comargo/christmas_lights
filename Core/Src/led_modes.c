@@ -8,24 +8,25 @@
 #include "led_modes.h"
 #include <string.h>
 #include <colorutils.h>
+#include <html_colors.h>
 
-static int building_light(uint8_t *buffer, uint16_t numLeds, int nPos)
+static int building_light(RGB *buffer, uint16_t numLeds, int nPos)
 {
 	if (nPos == 0xFFFF) {
 		for (int i = 0; i < numLeds; ++i) {
-			set_pixel(buffer + 3 * i, RGB(255, 0, 0));
+			buffer[i] = RGB_Red;
 		}
 		return nPos;
 	}
 	int loPos = nPos & 0xFF;
 	int hiPos = (nPos >> 8) & 0xFF;
 
-	memset(buffer, 0, numLeds * 3);
+	memset(buffer, 0, numLeds * sizeof(RGB));
 
 	for (int i = 0; i < hiPos; ++i) {
-		set_pixel(buffer + 3 * (numLeds - 1 - i), RGB(255, 0, 0));
+		buffer[(numLeds - 1 - i)] = RGB_Red;
 	}
-	set_pixel(buffer + 3 * loPos, RGB(255, 0, 0));
+	buffer[loPos] = RGB_Red;
 	blur1d(buffer, numLeds, 5);
 	loPos++;
 	if (loPos >= numLeds - hiPos) {
@@ -39,12 +40,9 @@ static int building_light(uint8_t *buffer, uint16_t numLeds, int nPos)
 	return (hiPos << 8) | loPos;
 }
 
-static int police_lights(uint8_t *buffer, uint16_t numLeds, int nPos)
+static int police_lights(RGB *buffer, uint16_t numLeds, int nPos)
 {
 	int state = nPos % 20;
-	const uint32_t red = RGB(63, 0, 0);
-	const uint32_t blue = RGB(0, 0, 63);
-	const uint32_t black = 0;
 
 	// i%2 = 0
 	// state 0,2,4,6 - red
@@ -52,15 +50,15 @@ static int police_lights(uint8_t *buffer, uint16_t numLeds, int nPos)
 	// state 8,10,12,14 - black
 	// state 9,11,13,15 - blue
 	if (state % 10 > 8) {
-		memset(buffer, 0, numLeds * 3);
+		memset(buffer, 0, numLeds * sizeof(RGB));
 	}
 	else {
 		for (int i = 0; i < numLeds; ++i) {
 			if ((state / 10) == ((i / 4) % 2)) {
-				set_pixel(buffer + 3 * i, (state % 2) ? red : black);
+				buffer[i] = (state % 2) ? RGB_Red : RGB_Black;
 			}
 			else {
-				set_pixel(buffer + 3 * i, (state % 2) ? blue : black);
+				buffer[i] = (state % 2) ? RGB_Blue : RGB_Black;
 			}
 		}
 	}
@@ -69,11 +67,11 @@ static int police_lights(uint8_t *buffer, uint16_t numLeds, int nPos)
 	return state;
 }
 
-int FillMode(enum LED_MODES mode, uint8_t *buffer, uint16_t numLeds, int *nPos)
+int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 {
 	switch (mode) {
 	case MODE_Off:
-		memset(buffer, 0, numLeds * 3);
+		memset(buffer, 0, numLeds * sizeof(RGB));
 		return NO_UPDATE;
 	case MODE_Start:
 		*nPos = building_light(buffer, numLeds, (*nPos));
