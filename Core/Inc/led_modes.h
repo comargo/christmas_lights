@@ -16,10 +16,15 @@ enum LED_MODES {
   MODE_Start,
   MODE_Rainbow,
   MODE_White,
+  MODE_Police,
 
   MODE_Last
 };
 
-void FillMode(enum LED_MODES mode, uint8_t *buffer, uint16_t numLeds, int* nPos);
+#define DEFAULT_DELAY -1
+#define NO_UPDATE -2
+
+// returns delay
+int FillMode(enum LED_MODES mode, uint8_t *buffer, uint16_t numLeds, int* nPos);
 
 #endif /* INC_LED_MODES_H_ */
