@@ -63,7 +63,16 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+static inline uint32_t GetNextTick(int delay)
+{
+	if(delay == NO_UPDATE) {
+		return HAL_MAX_DELAY;
+	}
+	if(delay == DEFAULT_DELAY) {
+		delay = 1000/60;
+	}
+	return HAL_GetTick()+delay;
+}
 /* USER CODE END 0 */
 
 /**
@@ -119,12 +128,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 //  size_t pos = 0;
 	enum LED_MODES oldMode = 0;
-  int oldInModePos = 0;
+  int oldModePos = 0;
+  uint32_t oldModeNextTick = 0;
 
 	enum LED_MODES curMode = 0;
-  int curInModePos = 0;
+  int curModePos = 0;
+  uint32_t curModeNextTick = 0;
 
-  fract16 transition = 0;
+  uint32_t transitionStartTick;
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -134,34 +146,50 @@ int main(void)
       enum LED_MODES newMode = GetModeFromIR(curMode);
       if(newMode != MODE_INVALID) {
         oldMode = curMode;
-        oldInModePos = curInModePos;
+        oldModePos = curModePos;
+        oldModeNextTick = curModeNextTick;
+        memcpy(xmas_buffer_from, xmas_buffer, 3*XMAS_LENGTH);
 
         curMode = newMode;
-        curInModePos = 0;
+        curModePos = 0;
+        curModeNextTick = 0;
 
-        transition = 0x8002;
+        transitionStartTick = HAL_GetTick();
       }
       CM_HAL_IRREMOTE_Start_IT(&irremote);
     }
 
+    bool hasUpdates = false;
+  	uint32_t tick = HAL_GetTick();
     if(oldMode == curMode) {
-      FillMode(curMode, xmas_buffer, XMAS_LENGTH, &curInModePos);
+    	if(tick >= curModeNextTick) {
+    		curModeNextTick = GetNextTick(FillMode(curMode, xmas_buffer, XMAS_LENGTH, &curModePos));
+    		hasUpdates = true;
+    	}
     }
     else {
-      FillMode(oldMode, xmas_buffer_from, XMAS_LENGTH, &oldInModePos);
-      FillMode(curMode, xmas_buffer_to, XMAS_LENGTH, &curInModePos);
-      blend_leds(xmas_buffer_from, xmas_buffer_to, xmas_buffer, XMAS_LENGTH, (transition-0x7FFF)>>7);
-      transition = ease16InOutQuad(transition);
-      if(transition == 0xFFFF) {
+    	if(oldModeNextTick != HAL_MAX_DELAY && tick >= oldModeNextTick) {
+        oldModeNextTick = GetNextTick(FillMode(oldMode, xmas_buffer_from, XMAS_LENGTH, &oldModePos));
+    	}
+    	if(curModeNextTick != HAL_MAX_DELAY && tick >= curModeNextTick) {
+    		curModeNextTick = GetNextTick(FillMode(curMode, xmas_buffer_to, XMAS_LENGTH, &curModePos));
+    	}
+    	fract16 transition = (tick-transitionStartTick)*256/1000;
+    	if(transition > 0xFF)
+    		transition = 0xFF;
+      blend_leds(xmas_buffer_from, xmas_buffer_to, xmas_buffer, XMAS_LENGTH, ease8InOutCubic(transition));
+      if(transition == 0xFF) {
         oldMode = curMode;
       }
+      hasUpdates = true;
     }
 
-  	CM_HAL_WS281X_SendBuffer(&ws281x);
-  	HAL_Delay(1000/60);
-  	while(ws281x.state != WS281x_Ready) {
-  		__NOP();
-  	}
+    if(hasUpdates) {
+    	CM_HAL_WS281X_SendBuffer(&ws281x);
+    	while(ws281x.state != WS281x_Ready) {
+    		__NOP();
+    	}
+    }
   }
   /* USER CODE END 3 */
 }

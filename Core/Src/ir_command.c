@@ -33,7 +33,21 @@ enum LED_MODES GetModeFromIR(enum LED_MODES curMode)
   case POWER_BUTTON: // POWER BUTTON
     if(curMode != MODE_Off)
       return MODE_Off;
-    return MODE_Rainbow;
+    return MODE_Start;
+
+  case UP_BUTTON:
+  	curMode++;
+  	if(curMode >= MODE_Last) {
+  		curMode = MODE_Off+1;
+  	}
+  	return curMode;
+
+  case DOWN_BUTTON:
+  	curMode--;
+  	if(curMode <= MODE_Off) {
+  		curMode = MODE_Last-1;
+  	}
+  	return curMode;
 
   default:
     return -1;
