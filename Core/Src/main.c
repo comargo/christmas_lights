@@ -25,7 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
-#include <visual_effects.h>
+
 #include <colorutils.h>
 
 #include "ir_commands.h"
