@@ -1,12 +1,12 @@
 [submodule "visual_effects"]
 	path = visual_effects
-	url = git@github.com:comargo/visual_effects.git
+	url = https://github.com/comargo/visual_effects.git
 [submodule "stm32_hal_btn"]
 	path = stm32_hal_btn
-	url = git@github.com:comargo/stm32_hal_btn.git
+	url = https://github.com/comargo/stm32_hal_btn.git
 [submodule "stm32_hal_ws281x"]
 	path = stm32_hal_ws281x
-	url = git@github.com:comargo/stm32_hal_ws281x.git
+	url = https://github.com/comargo/stm32_hal_ws281x.git
 [submodule "stm32_hal_irremote"]
 	path = stm32_hal_irremote
-	url = git@github.com:comargo/stm32_hal_irremote.git
+	url = https://github.com/comargo/stm32_hal_irremote.git
