@@ -105,7 +105,8 @@ int main(void)
   struct CM_HAL_WS281X_Channel xmas_chan1 = {
   		.GPIO_Pin = XMAS_Pin,
 			.frameBuffer = xmas_buffer,
-			.frameBufferSize = sizeof(xmas_buffer)/sizeof(xmas_buffer[0])
+			.frameBufferSize = sizeof(xmas_buffer)/sizeof(xmas_buffer[0]),
+			.colorMode = WS281x_GRB
   };
   CM_HAL_WS281X_AddChannel(&ws281x, &xmas_chan1);
   memset(xmas_buffer, 0, sizeof(xmas_buffer));

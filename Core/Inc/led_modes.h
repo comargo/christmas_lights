@@ -13,7 +13,11 @@
 enum LED_MODES {
   MODE_INVALID = -1,
   MODE_Off = 0,
-  MODE_Rainbow = 1,
+  MODE_Start,
+  MODE_Rainbow,
+  MODE_White,
+
+  MODE_Last
 };
 
 void FillMode(enum LED_MODES mode, uint8_t *buffer, uint16_t numLeds, int* nPos);
