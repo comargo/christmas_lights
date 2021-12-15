@@ -19,6 +19,9 @@ enum LED_MODES {
   MODE_White,
   MODE_Police,
 	MODE_Tricolor,
+	MODE_Palette1,
+	MODE_Palette2,
+	MODE_Palette3,
 
   MODE_Last
 };

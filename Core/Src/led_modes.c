@@ -6,9 +6,11 @@
  */
 
 #include "led_modes.h"
+#include <stm32f1xx_hal.h>
 #include <string.h>
 #include <colorutils.h>
 #include <html_colors.h>
+#include <gradient_palettes.h>
 
 static int building_light(RGB *buffer, uint16_t numLeds, int nPos)
 {
@@ -67,6 +69,23 @@ static int police_lights(RGB *buffer, uint16_t numLeds, int nPos)
 	return state;
 }
 
+static RGB gCurrentPalette[16] = {0};
+static RGB gTargetPalette[16];
+uint32_t get_millisecond_timer()
+{
+	return HAL_GetTick();
+}
+static int colorwave(RGB *buffer, uint16_t numLeds, int nPos)
+{
+	nblendPaletteTowardPalette16(gCurrentPalette, gTargetPalette, 24);
+
+	for(int i=0; i<numLeds; ++i) {
+		buffer[i] = ColorFromPalette16(gCurrentPalette, i, 255, LINEARBLEND);
+	}
+	nPos++;
+	return nPos;
+}
+
 int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 {
 	switch (mode) {
@@ -94,6 +113,14 @@ int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 		fill_solid(buffer, numLeds/3, (RGB){{213,43,30}});
 		fill_solid(buffer+numLeds/3, numLeds/3, (RGB){{0,57,166}});
 		return NO_UPDATE;
+	case MODE_Palette1:
+	case MODE_Palette2:
+	case MODE_Palette3:
+		if(*nPos == 0) {
+			Palette16FromGradientPalette(gTargetPalette, gGradientPalettes[mode-MODE_Palette1]);
+		}
+		*nPos = colorwave(buffer, numLeds, (*nPos));
+		return DEFAULT_DELAY;
 	default:
 		return NO_UPDATE;
 	}
