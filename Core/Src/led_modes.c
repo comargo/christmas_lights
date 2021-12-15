@@ -89,6 +89,11 @@ int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 	case MODE_White:
 		memset(buffer, 0xFF, numLeds*sizeof(RGB));
 		return NO_UPDATE;
+	case MODE_Tricolor:
+		fill_solid(buffer, numLeds, RGB_White);
+		fill_solid(buffer, numLeds/3, (RGB){{213,43,30}});
+		fill_solid(buffer+numLeds/3, numLeds/3, (RGB){{0,57,166}});
+		return NO_UPDATE;
 	default:
 		return NO_UPDATE;
 	}
