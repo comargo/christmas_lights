@@ -45,14 +45,14 @@ static int building_light(RGB *buffer, uint16_t numLeds, int nPos)
 
 static int police_lights(RGB *buffer, uint16_t numLeds, int nPos)
 {
-	int state = nPos % 20;
+	int state = nPos % 30;
 
 	// i%2 = 0
 	// state 0,2,4,6 - red
 	// state 1,3,5,7 - black
 	// state 8,10,12,14 - black
 	// state 9,11,13,15 - blue
-	if (state % 10 > 8) {
+	if (state % 15 > 8) {
 		memset(buffer, 0, numLeds * sizeof(RGB));
 	}
 	else {
@@ -105,7 +105,7 @@ int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 		return DEFAULT_DELAY;
 	case MODE_Police:
 		*nPos = police_lights(buffer, numLeds, (*nPos));
-		return 100;
+		return 50;
 	case MODE_White:
 		memset(buffer, 0xFF, numLeds*sizeof(RGB));
 		return NO_UPDATE;
