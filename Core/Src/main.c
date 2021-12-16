@@ -115,7 +115,7 @@ int main(void)
   		.GPIO_Pin = XMAS_Pin,
 			.frameBuffer = (uint8_t*)xmas_buffer,
 			.frameBufferSize = sizeof(xmas_buffer),
-			.colorMode = WS281x_GRB
+			.colorMode = WS281x_RGB
   };
   CM_HAL_WS281X_AddChannel(&ws281x, &xmas_chan1);
   memset(xmas_buffer, 0, sizeof(xmas_buffer));
@@ -166,14 +166,23 @@ int main(void)
     	if(tick >= curModeNextTick) {
     		curModeNextTick = GetNextTick(FillMode(curMode, xmas_buffer, XMAS_LENGTH, &curModePos));
     		hasUpdates = true;
+    		if(curMode != MODE_Off){
+    		  add_glitter(xmas_buffer, XMAS_LENGTH, 30);
+    		}
     	}
     }
     else {
     	if(oldModeNextTick != HAL_MAX_DELAY && tick >= oldModeNextTick) {
         oldModeNextTick = GetNextTick(FillMode(oldMode, xmas_buffer_from, XMAS_LENGTH, &oldModePos));
+        if(oldMode != MODE_Off){
+          add_glitter(xmas_buffer_from, XMAS_LENGTH, 30);
+        }
     	}
     	if(curModeNextTick != HAL_MAX_DELAY && tick >= curModeNextTick) {
     		curModeNextTick = GetNextTick(FillMode(curMode, xmas_buffer_to, XMAS_LENGTH, &curModePos));
+        if(curMode != MODE_Off){
+          add_glitter(xmas_buffer_to, XMAS_LENGTH, 30);
+        }
     	}
     	fract16 transition = (tick-transitionStartTick)*256/1000;
     	if(transition > 0xFF)

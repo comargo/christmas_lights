@@ -32,4 +32,6 @@ enum LED_MODES {
 // returns delay
 int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int* nPos);
 
+void add_glitter(RGB* buffer, uint16_t numLeds, int chance);
+
 #endif /* INC_LED_MODES_H_ */

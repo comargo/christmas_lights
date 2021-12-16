@@ -8,6 +8,7 @@
 #include "led_modes.h"
 #include <stm32f1xx_hal.h>
 #include <string.h>
+#include <stdlib.h>
 #include <colorutils.h>
 #include <html_colors.h>
 #include <gradient_palettes.h>
@@ -124,4 +125,11 @@ int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
 	default:
 		return NO_UPDATE;
 	}
+}
+
+void add_glitter(RGB* buffer, uint16_t numLeds, int chance)
+{
+  if((rand()>>24) < chance) {
+    buffer[(rand()>>16)*numLeds/(RAND_MAX>>16)] = RGB_White;
+  }
 }
