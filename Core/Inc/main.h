@@ -34,10 +34,15 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <stm32_hal_ws281x.h>
 #include <stm32_hal_irremote.h>
+#include <stm32_hal_btn.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+
+extern struct CM_HAL_WS281x ws281x;
+extern struct CM_HAL_IRREMOTE irremote;
+extern struct CM_HAL_BTN button;
 
 /* USER CODE END ET */
 
@@ -48,8 +53,7 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-struct CM_HAL_WS281x ws281x;
-struct CM_HAL_IRREMOTE irremote;
+
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

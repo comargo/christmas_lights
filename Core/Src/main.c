@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "rtc.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -27,19 +28,33 @@
 #include <stdio.h>
 
 #include <colorutils.h>
-
-#include "ir_commands.h"
+#include <command.h>
 #include "led_modes.h"
+#include "bkp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+struct play_mode {
+	enum LED_MODES oldMode;
+  int oldModePos;
+  uint32_t oldModeNextTick;
+  uint16_t oldModeGlitter;
 
+	enum LED_MODES curMode;
+  int curModePos;
+  uint32_t curModeNextTick;
+  uint16_t curModeGlitter;
+
+  uint32_t transitionStartTick;
+};
+#define GLITTER_ENABLE UINT16_C(0x100)
+#define GLITTER_MASK UINT16_C(0xFF)
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-void OnButtonClicked(struct CM_HAL_BTN *btn, void *pUserData, enum CM_HAL_BTN_Reason reason);
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,6 +68,9 @@ void OnButtonClicked(struct CM_HAL_BTN *btn, void *pUserData, enum CM_HAL_BTN_Re
 RGB xmas_buffer[XMAS_LENGTH];
 RGB xmas_buffer_from[XMAS_LENGTH];
 RGB xmas_buffer_to[XMAS_LENGTH];
+struct CM_HAL_WS281x ws281x;
+struct CM_HAL_IRREMOTE irremote;
+struct CM_HAL_BTN button;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,7 +81,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static inline uint32_t GetNextTick(int delay)
+static inline uint32_t GetNextTick(int delay, uint8_t speed)
 {
 	if(delay == NO_UPDATE) {
 		return HAL_MAX_DELAY;
@@ -72,6 +90,20 @@ static inline uint32_t GetNextTick(int delay)
 		delay = 1000/60;
 	}
 	return HAL_GetTick()+delay;
+}
+
+void SetMode(struct play_mode *mode, enum LED_MODES new_mode)
+{
+  mode->oldMode = mode->curMode;
+  mode->oldModePos = mode->curModePos;
+  mode->oldModeNextTick = mode->curModeNextTick;
+  memcpy(xmas_buffer_from, xmas_buffer, 3*XMAS_LENGTH);
+
+  mode->curMode = new_mode;
+  mode->curModePos = 0;
+  mode->curModeNextTick = 0;
+
+  mode->transitionStartTick = HAL_GetTick();
 }
 /* USER CODE END 0 */
 
@@ -103,8 +135,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-  button.callback = &OnButtonClicked;
   CM_HAL_BTN_Init(&button);
 
   CM_HAL_IRREMOTE_Init(&irremote, TIM3);
@@ -128,73 +160,167 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 //  size_t pos = 0;
-	enum LED_MODES oldMode = 0;
-  int oldModePos = 0;
-  uint32_t oldModeNextTick = 0;
 
-	enum LED_MODES curMode = 0;
-  int curModePos = 0;
-  uint32_t curModeNextTick = 0;
+  uint8_t hasBackup = HAL_RTCEx_BKUPRead(&hrtc, BKP_HasBackup);
+  HAL_RTCEx_BKUPWrite(&hrtc, BKP_HasBackup, 1);
 
-  uint32_t transitionStartTick;
+  struct play_mode mode = {0};
+  mode.curMode = hasBackup?HAL_RTCEx_BKUPRead(&hrtc, BKP_LastMode):MODE_Start;
+  mode.curModeGlitter = hasBackup?HAL_RTCEx_BKUPRead(&hrtc, BKP_Glitter):0;
 
-  while (1)
-  {
-    /* USER CODE END WHILE */
+  uint8_t brightness = hasBackup?HAL_RTCEx_BKUPRead(&hrtc, BKP_Brightness):127;
+  uint8_t speed = hasBackup?HAL_RTCEx_BKUPRead(&hrtc, BKP_Speed):127;
+  if(!hasBackup) {
+  	HAL_RTCEx_BKUPWrite(&hrtc, BKP_LastMode, mode.curMode);
+  	HAL_RTCEx_BKUPWrite(&hrtc, BKP_Glitter, mode.curModeGlitter);
+  	HAL_RTCEx_BKUPWrite(&hrtc, BKP_Brightness, brightness);
+  	HAL_RTCEx_BKUPWrite(&hrtc, BKP_Speed, speed);
+  }
 
-    /* USER CODE BEGIN 3 */
-    if(irremote.rcvstate == IRREMOTE_DONE) {
-      enum LED_MODES newMode = GetModeFromIR(curMode);
-      if(newMode != MODE_INVALID) {
-        oldMode = curMode;
-        oldModePos = curModePos;
-        oldModeNextTick = curModeNextTick;
-        memcpy(xmas_buffer_from, xmas_buffer, 3*XMAS_LENGTH);
+  uint8_t powerState = 0;
 
-        curMode = newMode;
-        curModePos = 0;
-        curModeNextTick = 0;
 
-        transitionStartTick = HAL_GetTick();
-      }
-      CM_HAL_IRREMOTE_Start_IT(&irremote);
-    }
+  while (1) {
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
+		struct command cmd = { .type = CMD_NoCommand };
+		if (irremote.rcvstate == IRREMOTE_DONE) {
+			GetCommandFromIR(&cmd);
+			CM_HAL_IRREMOTE_Start_IT(&irremote);
+		}
+		else if (CM_HAL_BTN_hasClicks(&button)) {
+			GetCommandFromBtn(&cmd);
+			if (!powerState && cmd.type == CMD_ChangeMode) {
+				// special case. Use hardware button single click to power on
+				cmd.type = CMD_Power;
+			}
+		}
+
+		if (powerState || cmd.type == CMD_Power) {
+			switch (cmd.type) {
+			case CMD_Power:
+				powerState = !powerState;
+				if (powerState) {
+					enum LED_MODES new_mode = mode.curMode;
+					mode.curMode = MODE_Off;
+					SetMode(&mode, new_mode);
+				}
+				else {
+					SetMode(&mode, MODE_Off);
+				}
+				break;
+			case CMD_SetMode:
+				SetMode(&mode, cmd.mode);
+				break;
+			case CMD_ToggleGlitter:
+				if (mode.curModeGlitter & GLITTER_ENABLE) {
+					mode.curModeGlitter &= ~(GLITTER_ENABLE);
+				}
+				else {
+					mode.curModeGlitter |= GLITTER_ENABLE;
+				}
+				HAL_RTCEx_BKUPWrite(&hrtc, BKP_Glitter, mode.curModeGlitter);
+				break;
+			case CMD_GlitterChance: {
+				uint8_t glitter = mode.curModeGlitter & GLITTER_MASK;
+				if (cmd.direction > 0) {
+					glitter = qadd8(glitter, 1);
+				}
+				else if (cmd.direction < 0) {
+					glitter = qsub8(glitter, 1);
+				}
+				mode.curModeGlitter = (mode.curModeGlitter & GLITTER_ENABLE) | glitter;
+				HAL_RTCEx_BKUPWrite(&hrtc, BKP_Glitter, mode.curModeGlitter);
+				break;
+			}
+			case CMD_ChangeMode: {
+				enum LED_MODES new_mode = mode.curMode + cmd.direction;
+				if (new_mode == MODE_Off) {
+					new_mode = MODE_Last - 1;
+				}
+				else if (new_mode == MODE_Last) {
+					new_mode = MODE_Off + 1;
+				}
+				SetMode(&mode, new_mode);
+				break;
+			}
+			case CMD_Brightness:
+				if (cmd.direction > 0) {
+					brightness = qadd8(brightness, 1);
+				}
+				else if (cmd.direction < 0) {
+					brightness = qsub8(brightness, 1);
+				}
+				HAL_RTCEx_BKUPWrite(&hrtc, BKP_Brightness, brightness);
+				break;
+			case CMD_Speed:
+				if (cmd.direction > 0) {
+					speed = qadd8(speed, 1);
+				}
+				else if (cmd.direction < 0) {
+					speed = qsub8(speed, 1);
+				}
+				HAL_RTCEx_BKUPWrite(&hrtc, BKP_Speed, speed);
+				break;
+			case CMD_NoCommand:
+				break;
+			}
+		}
+
+		if(mode.oldMode == MODE_Off && !powerState)
+			continue;
 
     bool hasUpdates = false;
   	uint32_t tick = HAL_GetTick();
-    if(oldMode == curMode) {
-    	if(tick >= curModeNextTick) {
-    		curModeNextTick = GetNextTick(FillMode(curMode, xmas_buffer, XMAS_LENGTH, &curModePos));
+    if(mode.oldMode == mode.curMode) {
+    	if(tick >= mode.curModeNextTick) {
+    		mode.curModeNextTick = GetNextTick(FillMode(mode.curMode, xmas_buffer, XMAS_LENGTH, &mode.curModePos), speed);
     		hasUpdates = true;
-    		if(curMode != MODE_Off){
+    		if(mode.curMode != MODE_Off && mode.curModeGlitter){
     		  add_glitter(xmas_buffer, XMAS_LENGTH, 30);
     		}
     	}
     }
     else {
-    	if(oldModeNextTick != HAL_MAX_DELAY && tick >= oldModeNextTick) {
-        oldModeNextTick = GetNextTick(FillMode(oldMode, xmas_buffer_from, XMAS_LENGTH, &oldModePos));
-        if(oldMode != MODE_Off){
+    	if(mode.oldModeNextTick != HAL_MAX_DELAY && tick >= mode.oldModeNextTick) {
+    		mode.oldModeNextTick = GetNextTick(FillMode(mode.oldMode, xmas_buffer_from, XMAS_LENGTH, &mode.oldModePos), speed);
+        if(mode.oldMode != MODE_Off && mode.oldModeGlitter){
           add_glitter(xmas_buffer_from, XMAS_LENGTH, 30);
         }
     	}
-    	if(curModeNextTick != HAL_MAX_DELAY && tick >= curModeNextTick) {
-    		curModeNextTick = GetNextTick(FillMode(curMode, xmas_buffer_to, XMAS_LENGTH, &curModePos));
-        if(curMode != MODE_Off){
-          add_glitter(xmas_buffer_to, XMAS_LENGTH, 30);
+    	if(mode.curModeNextTick != HAL_MAX_DELAY && tick >= mode.curModeNextTick) {
+    		mode.curModeNextTick = GetNextTick(FillMode(mode.curMode, xmas_buffer_to, XMAS_LENGTH, &mode.curModePos), speed);
+        if(mode.curMode != MODE_Off && mode.curModeGlitter){
+          add_glitter(xmas_buffer_to, XMAS_LENGTH, mode.curModeGlitter&GLITTER_MASK);
         }
     	}
-    	fract16 transition = (tick-transitionStartTick)*256/1000;
+    	fract16 transition = (tick-mode.transitionStartTick)*256/1000;
     	if(transition > 0xFF)
     		transition = 0xFF;
       blend_leds(xmas_buffer_from, xmas_buffer_to, xmas_buffer, XMAS_LENGTH, ease8InOutCubic(transition));
       if(transition == 0xFF) {
-        oldMode = curMode;
+      	if(!powerState) {
+      		//Special case of power off state:
+
+      		// Save previous mode in _curMode_
+      		mode.curMode = mode.oldMode;
+      		// Set old mode to power off
+      		mode.oldMode = MODE_Off;
+      		// It will be later checked to skip mode calculations
+      	}
+      	else {
+          mode.oldMode = mode.curMode;
+          if(mode.curMode != MODE_Off) {
+          	HAL_RTCEx_BKUPWrite(&hrtc, BKP_LastMode, mode.curMode);
+          }
+      	}
       }
       hasUpdates = true;
     }
 
     if(hasUpdates) {
+    	nscale8(xmas_buffer, XMAS_LENGTH, brightness);
     	CM_HAL_WS281X_SendBuffer(&ws281x);
     	while(ws281x.state != WS281x_Ready) {
     		__NOP();
@@ -212,14 +338,16 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -240,26 +368,15 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
-
-void OnButtonClicked(struct CM_HAL_BTN *btn, void *userData, enum CM_HAL_BTN_Reason reason)
-{
-	switch (reason) {
-		case CM_HAL_BTN_CB_PRESSED:
-			printf("Button pressed\r\n");
-			break;
-		case CM_HAL_BTN_CB_RELEASED:
-			printf("Button released\r\n");
-			break;
-		case CM_HAL_BTN_CB_CLICK_TIMEOUT:
-			printf("Button times out\r\n");
-			break;
-		default:
-			break;
-	}
-}
 
 #define FAULT_DELAY(x) for (int i=0; i<x*200000; ++i) __NOP()
 
