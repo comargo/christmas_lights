@@ -38,9 +38,8 @@ extern RTC_HandleTypeDef hrtc;
 enum {
 	BKP_HasBackup = RTC_BKP_DR1,
 	BKP_LastMode = RTC_BKP_DR2,
-	BKP_Brightness = RTC_BKP_DR3,
-	BKP_Speed = RTC_BKP_DR4,
-	BKP_Glitter = RTC_BKP_DR5,
+	BKP_BrightnessSpeed = RTC_BKP_DR3,
+	BKP_Glitter = RTC_BKP_DR4,
 } BackupRegisters;
 
 /* USER CODE END Private defines */

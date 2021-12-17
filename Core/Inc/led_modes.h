@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <color_types.h>
 
-enum LED_MODES {
+enum LED_Mode {
   MODE_INVALID = -1,
   MODE_Off = 0,
   MODE_Start,
@@ -30,7 +30,7 @@ enum LED_MODES {
 #define NO_UPDATE -2
 
 // returns delay
-int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int* nPos);
+int FillMode(enum LED_Mode mode, RGB *buffer, uint16_t numLeds, int* nPos);
 
 void add_glitter(RGB* buffer, uint16_t numLeds, int chance);
 

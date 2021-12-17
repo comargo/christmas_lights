@@ -23,7 +23,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "gpio.h"
+#include "xmas_lights.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

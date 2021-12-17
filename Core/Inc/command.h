@@ -8,8 +8,10 @@
 #ifndef INC_COMMAND_H_
 #define INC_COMMAND_H_
 
-#include <stdbool.h>
 #include "led_modes.h"
+
+struct CM_HAL_BTN;
+struct CM_HAL_IRREMOTE;
 
 enum CommandType {
 	CMD_NoCommand,
@@ -25,12 +27,12 @@ enum CommandType {
 struct command {
 	enum CommandType type;
 	union {
-		enum LED_MODES mode; // CMD_SetMode
+		enum LED_Mode mode; // CMD_SetMode
 		int8_t direction; // CMD_ChangeMode, CMD_Brightness
 	};
 };
 
-bool GetCommandFromBtn(struct command *cmd);
-bool GetCommandFromIR(struct command *cmd);
+uint8_t GetCommandFromBtn(struct command *cmd, struct CM_HAL_BTN *button);
+uint8_t GetCommandFromIR(struct command *cmd, struct CM_HAL_IRREMOTE *irremote);
 
 #endif /* INC_COMMAND_H_ */

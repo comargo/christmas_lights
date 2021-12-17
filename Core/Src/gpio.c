@@ -19,9 +19,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "gpio.h"
+#include "xmas_lights.h"
 
 /* USER CODE BEGIN 0 */
-struct CM_HAL_BTN button = CM_HAL_BTN_StaticInit(BTN_GPIO_Port, BTN_Pin, GPIO_PULLUP, false);
+
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/

@@ -87,7 +87,7 @@ static int colorwave(RGB *buffer, uint16_t numLeds, int nPos)
 	return nPos;
 }
 
-int FillMode(enum LED_MODES mode, RGB *buffer, uint16_t numLeds, int *nPos)
+int FillMode(enum LED_Mode mode, RGB *buffer, uint16_t numLeds, int *nPos)
 {
 	switch (mode) {
 	case MODE_Off:
