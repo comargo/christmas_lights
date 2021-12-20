@@ -11,17 +11,20 @@
 #include <stdint.h>
 #include <color_types.h>
 
-enum LED_Mode {
+enum LED_Mode
+{
   MODE_INVALID = -1,
   MODE_Off = 0,
   MODE_Start,
   MODE_Rainbow,
   MODE_White,
+  MODE_Black,
   MODE_Police,
-	MODE_Tricolor,
-	MODE_Palette1,
-	MODE_Palette2,
-	MODE_Palette3,
+  MODE_Tricolor,
+  MODE_Palette1,
+  MODE_Palette2,
+  MODE_Palette3,
+  MODE_Fire123,
 
   MODE_Last
 };
@@ -30,8 +33,9 @@ enum LED_Mode {
 #define NO_UPDATE -2
 
 // returns delay
-int FillMode(enum LED_Mode mode, RGB *buffer, uint16_t numLeds, int* nPos);
+struct xmas_state;
+int FillMode(struct xmas_state *xmas_state);
 
-void add_glitter(RGB* buffer, uint16_t numLeds, int chance);
+void add_glitter(RGB *buffer, uint16_t numLeds, int chance);
 
 #endif /* INC_LED_MODES_H_ */

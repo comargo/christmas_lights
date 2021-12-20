@@ -16,32 +16,39 @@
 
 #define XMAS_LENGTH 200
 
-struct state {
-	enum LED_Mode mode;
-	uint32_t position;
-	uint32_t next_tick;
-	uint16_t glitter;
-	RGB buffer[XMAS_LENGTH];
+struct xmas_state
+{
+  enum LED_Mode mode;
+  uint32_t position;
+  uint32_t next_tick;
+  RGB buffer[XMAS_LENGTH];
 };
 
-struct xmas {
-	struct state prev_mode;
-	struct state current_mode;
+struct xmas
+{
+  struct xmas_state prev_mode;
+  struct xmas_state current_mode;
 
-	uint32_t transition_start_tick;
+  uint32_t transition_start_tick;
 
-	RGB out_buffer[XMAS_LENGTH];
+  RGB out_buffer[XMAS_LENGTH];
 
-	union {
-		struct {
-			uint8_t brightness;
-			uint8_t speed;
-		};
-		uint16_t brightness_speed;
-	};
+  uint16_t glitter;
+  union
+  {
+    struct
+    {
+      uint8_t brightness;
+      uint8_t speed;
+    };
+    uint16_t brightness_speed;
+  };
 
-	uint8_t power;
-	uint8_t transition_complete;
+  uint8_t power;
+  uint8_t transition_complete;
+
+  uint8_t script;
+  uint8_t script_state;
 };
 
 extern struct CM_HAL_WS281x ws281x;
@@ -49,6 +56,7 @@ extern struct CM_HAL_IRREMOTE irremote;
 extern struct CM_HAL_BTN button;
 
 struct xmas* XMAS_Init();
-void XMAS_Loop(struct xmas* xmas);
+void XMAS_Loop(struct xmas *xmas);
+void XMAS_SetMode(struct xmas *xmas, enum LED_Mode new_mode);
 
 #endif /* INC_CHRISTMAS_LIGHTS_H_ */
