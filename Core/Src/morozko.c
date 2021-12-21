@@ -22,7 +22,7 @@ enum MZ_State {
   MZ_Cooling1, // Medium light
   MZ_Cooling2, // Cold light
   MZ_Warming, // Warm light
-} g_morozko_state;
+};
 
 static void MZ_SetMode(enum MZ_State state, struct xmas *xmas)
 {
@@ -35,9 +35,11 @@ static void MZ_SetMode(enum MZ_State state, struct xmas *xmas)
   case MZ_Fire1:
   case MZ_Fire2:
   case MZ_Fire3:
+    LedMode_SetTargetPalette(2);
     XMAS_SetMode(xmas, MODE_Fire123);
     xmas->current_mode.position = (state-MZ_Fire1)*0x100;
     break;
+
   case MZ_Game_Round1_On: // Medium light
   case MZ_Cooling1: // Medium light
     XMAS_SetMode(xmas, MODE_Palette2);

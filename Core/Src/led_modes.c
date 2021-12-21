@@ -75,6 +75,15 @@ static int police_lights(RGB *buffer, uint16_t numLeds, int nPos)
 static RGB gCurrentPalette[16] =
   { 0 };
 static RGB gTargetPalette[16];
+
+void LedMode_SetTargetPallete(int palette)
+{
+  Palette16FromGradientPalette(gTargetPalette,
+      gGradientPalettes[palette]);
+}
+
+
+
 uint32_t get_millisecond_timer()
 {
   return HAL_GetTick();
@@ -222,8 +231,7 @@ int FillMode(struct xmas_state *xmas_state)
   case MODE_Palette2:
   case MODE_Palette3:
     if (xmas_state->position == 0) {
-      Palette16FromGradientPalette(gTargetPalette,
-          gGradientPalettes[xmas_state->mode - MODE_Palette1]);
+      LedMode_SetTargetPallete(xmas_state->mode - MODE_Palette1);
     }
     xmas_state->position = colorwave(xmas_state->buffer,
         _countof(xmas_state->buffer), xmas_state->position);
