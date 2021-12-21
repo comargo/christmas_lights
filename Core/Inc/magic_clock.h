@@ -8,6 +8,9 @@
 #ifndef MAGIC_CLOCK_C_
 #define MAGIC_CLOCK_C_
 
-void MagicClockScript(struct xmas *xmas, struct command *command);
+#include "script.h"
+
+extern const struct script_mode magic_clock_script[];
+extern const int magic_clock_len;
 
 #endif /* MAGIC_CLOCK_C_ */

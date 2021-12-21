@@ -8,10 +8,9 @@
 #ifndef INC_MOROZKO_H_
 #define INC_MOROZKO_H_
 
-#include "xmas_lights.h"
-#include "command.h"
+#include "script.h"
 
-void MorozkoScript(struct xmas *xmas, struct command *cmd);
-
+extern const struct script_mode morozko_script[];
+extern const int morozko_script_len;
 
 #endif /* INC_MOROZKO_H_ */

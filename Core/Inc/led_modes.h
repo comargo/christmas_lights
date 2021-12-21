@@ -21,6 +21,7 @@ enum LED_Mode
   MODE_Black,
   MODE_Police,
   MODE_Tricolor,
+	MODE_WhitePulse,
   MODE_Palette1,
   MODE_Palette2,
   MODE_Palette3,
@@ -35,7 +36,7 @@ enum LED_Mode
 // returns delay
 struct xmas_state;
 
-void LedMode_SetTragetPallete(int pallete);
+void LedMode_SetTargetPalette(int pallete);
 int FillMode(struct xmas_state *xmas_state);
 
 void add_glitter(RGB *buffer, uint16_t numLeds, int chance);

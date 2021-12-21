@@ -68,21 +68,18 @@ static int police_lights(RGB *buffer, uint16_t numLeds, int nPos)
     }
   }
 
-  state++;
-  return state;
+  return state+1;
 }
 
 static RGB gCurrentPalette[16] =
   { 0 };
 static RGB gTargetPalette[16];
 
-void LedMode_SetTargetPallete(int palette)
+void LedMode_SetTargetPalette(int palette)
 {
   Palette16FromGradientPalette(gTargetPalette,
       gGradientPalettes[palette]);
 }
-
-
 
 uint32_t get_millisecond_timer()
 {
@@ -108,8 +105,19 @@ static int colorwave(RGB *buffer, uint16_t numLeds, int nPos)
     buffer[i] = ColorFromPalette16(gCurrentPalette, tmp, 255, LINEARBLEND);
   }
   blur1d(buffer, numLeds, 15);
-  nPos++;
-  return nPos;
+  return nPos+1;
+}
+
+static int white_pulse(RGB *buffer, uint16_t numLeds, int nPos)
+{
+//	uint8_t luma = beatsin88(4209, 0, 1, 0, 0);
+	static int timebase = 0;
+	if(nPos == 0) {
+		timebase = get_millisecond_timer();
+	}
+	uint8_t luma = beat88(4503 , timebase)/256;
+	memset(buffer, 256-luma, numLeds*sizeof(RGB));
+	return nPos+1;
 }
 
 static int fire_up_down(RGB *buffer, uint16_t numLeds, int nPos, int ledsToFireMax)
@@ -157,8 +165,7 @@ static int fire_up_down(RGB *buffer, uint16_t numLeds, int nPos, int ledsToFireM
 //    nscale8(&buffer[i], 1, scale);
 //  }
 //
-  ++nPos;
-  return nPos;
+  return nPos+1;
 }
 
 static int fire_up(RGB *buffer, uint16_t numLeds, int nPos)
@@ -218,6 +225,9 @@ int FillMode(struct xmas_state *xmas_state)
   case MODE_White:
     memset(xmas_state->buffer, 0xff, sizeof(xmas_state->buffer));
     return NO_UPDATE;
+  case MODE_WhitePulse:
+  	xmas_state->position = white_pulse(xmas_state->buffer, _countof(xmas_state->buffer), xmas_state->position);
+		return DEFAULT_DELAY;
   case MODE_Black:
     memset(xmas_state->buffer, 0, sizeof(xmas_state->buffer));
     return NO_UPDATE;
@@ -231,7 +241,7 @@ int FillMode(struct xmas_state *xmas_state)
   case MODE_Palette2:
   case MODE_Palette3:
     if (xmas_state->position == 0) {
-      LedMode_SetTargetPallete(xmas_state->mode - MODE_Palette1);
+      LedMode_SetTargetPalette(xmas_state->mode - MODE_Palette1);
     }
     xmas_state->position = colorwave(xmas_state->buffer,
         _countof(xmas_state->buffer), xmas_state->position);

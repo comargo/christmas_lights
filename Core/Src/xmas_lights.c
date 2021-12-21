@@ -15,9 +15,7 @@
 #include "rtc.h"
 
 #include "morozko.h"
-
-#define GLITTER_ENABLE_BIT UINT16_C(0x100)
-#define GLITTER_MASK UINT16_C(0xFF)
+#include "magic_clock.h"
 
 struct xmas g_xmas =
   { .transition_complete = 1 };
@@ -217,7 +215,10 @@ void XMAS_Loop(struct xmas *xmas)
     NoScriptMode(xmas, &cmd);
     break;
   case 1: // 1st script Morozko
-    MorozkoScript(xmas, &cmd);
+  	ProcessScript(xmas, &cmd, morozko_script, morozko_script_len);
+    break;
+  case 2: // 2ndt script Magic Clock
+  	ProcessScript(xmas, &cmd, magic_clock_script, magic_clock_len);
     break;
   }
 

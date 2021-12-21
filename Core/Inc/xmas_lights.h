@@ -51,6 +51,9 @@ struct xmas
   uint8_t script_state;
 };
 
+#define GLITTER_ENABLE_BIT UINT16_C(0x100)
+#define GLITTER_MASK UINT16_C(0xFF)
+
 extern struct CM_HAL_WS281x ws281x;
 extern struct CM_HAL_IRREMOTE irremote;
 extern struct CM_HAL_BTN button;
