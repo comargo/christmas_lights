@@ -70,9 +70,9 @@ static inline void load_params(struct xmas *play)
 
   play->current_mode.mode =
       hasBackup ? HAL_RTCEx_BKUPRead(&hrtc, BKP_LastMode) : MODE_Start;
-  play->glitter = hasBackup ? HAL_RTCEx_BKUPRead(&hrtc, BKP_Glitter) : 0;
+  play->glitter = hasBackup ? HAL_RTCEx_BKUPRead(&hrtc, BKP_Glitter) : 0xFF;
   play->brightness_speed =
-      hasBackup ? HAL_RTCEx_BKUPRead(&hrtc, BKP_BrightnessSpeed) : (0x7F7F);
+      hasBackup ? HAL_RTCEx_BKUPRead(&hrtc, BKP_BrightnessSpeed) : (0xFF7F);
 
   if (!hasBackup) {
     HAL_RTCEx_BKUPWrite(&hrtc, BKP_LastMode, play->current_mode.mode);
