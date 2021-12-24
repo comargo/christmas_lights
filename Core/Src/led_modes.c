@@ -78,7 +78,7 @@ static RGB gTargetPalette[16];
 void LedMode_SetTargetPalette(int palette)
 {
   Palette16FromGradientPalette(gTargetPalette,
-      gGradientPalettes[palette]);
+      gGradientPalettes[palette-1]);
 }
 
 uint32_t get_millisecond_timer()
@@ -241,17 +241,12 @@ int FillMode(struct xmas_state *xmas_state)
   case MODE_Palette2:
   case MODE_Palette3:
     if (xmas_state->position == 0) {
-      LedMode_SetTargetPalette(xmas_state->mode - MODE_Palette1);
+      LedMode_SetTargetPalette(xmas_state->mode - MODE_Palette1+1);
     }
     xmas_state->position = colorwave(xmas_state->buffer,
         _countof(xmas_state->buffer), xmas_state->position);
     return DEFAULT_DELAY;
   case MODE_Fire123: {
-    if (xmas_state->position == 0) {
-      Palette16FromGradientPalette(gTargetPalette,
-          gGradientPalettes[2]);
-      memcpy(gCurrentPalette, gTargetPalette, sizeof(gTargetPalette));
-    }
     uint8_t fire123_state = (xmas_state->position & 0xFF00)>>8;
     xmas_state->position = fire123(xmas_state->buffer, _countof(xmas_state->buffer), xmas_state->position&0xFF, fire123_state);
     xmas_state->position |= fire123_state*0x100;

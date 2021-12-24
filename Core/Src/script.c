@@ -12,7 +12,7 @@
 static void Script_SetMode(int8_t next_state, struct xmas *xmas, const struct script_mode *script, int script_size)
 {
 	XMAS_SetMode(xmas, script[next_state].mode);
-  if(script[next_state].start_palette != -1) {
+  if(script[next_state].start_palette != 0) {
     LedMode_SetTargetPalette(script[next_state].start_palette);
   }
   xmas->current_mode.position = script[next_state].start_pos;
